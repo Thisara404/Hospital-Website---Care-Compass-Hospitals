@@ -1,16 +1,14 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'db_connection.php';
 
 // Function to authorize user roles
-function authorize($required_role) {
-    if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
+function authorize($role) {
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== $role) {
+        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
         header('Location: Login.php');
-        exit();
-    }
-    
-    if ($_SESSION['role'] !== $required_role) {
-        header('Location: unauthorized.php');
         exit();
     }
 }

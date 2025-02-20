@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'backend/db_connection.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -7,7 +10,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Sanitize inputs
     $specialty = $conn->real_escape_string($_POST['specialty']);
-    $doctor_name = $conn->real_escape_string($_POST['doctor']);
+    $doctor_id = $conn->real_escape_string($_POST['doctor']);
     $date = $conn->real_escape_string($_POST['appointment-date']);
     $time_slot = $conn->real_escape_string($_POST['time-slot']);
     $patient_name = $conn->real_escape_string($_POST['patient-name']);
@@ -15,43 +18,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $conn->real_escape_string($_POST['patient-email']);
     $notes = $conn->real_escape_string($_POST['additional-notes'] ?? '');
 
-    // Get doctor_id
-    $doctor_query = "SELECT doctor_id FROM Doctors WHERE name = ?";
-    $doctor_stmt = $conn->prepare($doctor_query);
-    $doctor_stmt->bind_param("s", $doctor_name);
-    $doctor_stmt->execute();
-    $doctor_result = $doctor_stmt->get_result();
-    
-    if ($doctor_result->num_rows > 0) {
-        $doctor_row = $doctor_result->fetch_assoc();
-        $doctor_id = $doctor_row['doctor_id'];
+    // Store appointment data in session
+    $_SESSION['temp_appointment'] = [
+        'specialty' => $specialty,
+        'doctor_id' => $doctor_id,
+        'date' => $date,
+        'time_slot' => $time_slot,
+        'patient_name' => $patient_name,
+        'contact' => $contact,
+        'email' => $email,
+        'notes' => $notes,
+        'type' => 'channeling'
+    ];
 
-        // Optional: User ID if logged in
-        $user_id = null;
-
-        $insert_query = "INSERT INTO Appointments 
-                         (user_id, doctor_id, specialty, appointment_date, time_slot, 
-                          patient_name, contact_number, email, additional_notes) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("iisssssss", 
-            $user_id, $doctor_id, $specialty, $date, $time_slot, 
-            $patient_name, $contact, $email, $notes
-        );
-
-        if ($insert_stmt->execute()) {
-            echo json_encode(['status' => 'success', 'message' => 'Appointment booked successfully']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Failed to book appointment']);
-        }
-
-        $insert_stmt->close();
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Doctor not found']);
+    // Check if user is logged in
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: user_check.php');
+        exit();
     }
 
-    $doctor_stmt->close();
+    // If user is logged in, proceed with booking
+    $user_id = $_SESSION['user_id'];
+    $insert_query = "INSERT INTO appointments 
+                     (user_id, doctor_id, specialty, appointment_date, time_slot, 
+                      patient_name, contact_number, email, additional_notes, appointment_type) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'channeling')";
+
+    $insert_stmt = $conn->prepare($insert_query);
+    $insert_stmt->bind_param("iisssssss", 
+        $user_id, $doctor_id, $specialty, $date, $time_slot, 
+        $patient_name, $contact, $email, $notes
+    );
+
+    if ($insert_stmt->execute()) {
+        $_SESSION['appointment_success'] = true;
+        header('Location: Patient.php');
+        exit();
+    } else {
+        $_SESSION['appointment_error'] = 'Failed to book appointment';
+        header('Location: ChannelingForm.php');
+        exit();
+    }
+
+    $insert_stmt->close();
     $db->closeConnection();
     exit();
 }
@@ -174,30 +183,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <p>&copy; 2025 Care Compass Hospitals. All rights reserved.</p>
     </footer>
 
-    <!-- <script>
-        // Dynamic doctor selection based on specialty
+    <script>
         const specialtySelect = document.getElementById('specialty');
         const doctorSelect = document.getElementById('doctor');
 
-        const doctorsBySpecialty = {
-            'general-checkup': ['Dr. Sarah Johnson', 'Dr. Michael Lee'],
-            'cardiology': ['Dr. Robert Chen', 'Dr. Emily Rodriguez'],
-            'endocrinology': ['Dr. Amanda Wong', 'Dr. David Kim'],
-            // Add more doctors for each specialty
-        };
-
         specialtySelect.addEventListener('change', function() {
-            doctorSelect.disabled = false;
-            doctorSelect.innerHTML = '<option value="">Select a Doctor</option>';
+            const specialty = this.value;
+            doctorSelect.disabled = true;
+            doctorSelect.innerHTML = '<option value="">Loading doctors...</option>';
             
-            const doctors = doctorsBySpecialty[this.value] || [];
-            doctors.forEach(doctor => {
-                const option = document.createElement('option');
-                option.value = doctor.replace(/\s+/g, '-').toLowerCase();
-                option.textContent = doctor;
-                doctorSelect.appendChild(option);
-            });
+            fetch(`get_doctors_by_specialty.php?specialty=${encodeURIComponent(specialty)}`)
+                .then(response => response.json())
+                .then(data => {
+                    doctorSelect.innerHTML = '<option value="">Select a Doctor</option>';
+                    if (data.status === 'success') {
+                        data.doctors.forEach(doctor => {
+                            const option = document.createElement('option');
+                            option.value = doctor.id;
+                            option.textContent = `Dr. ${doctor.full_name}`;
+                            doctorSelect.appendChild(option);
+                        });
+                        doctorSelect.disabled = false;
+                    } else {
+                        doctorSelect.innerHTML = '<option value="">No doctors available</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    doctorSelect.innerHTML = '<option value="">Error loading doctors</option>';
+                });
         });
-    </script> -->
+    </script>
 </body>
 </html>

@@ -162,3 +162,30 @@ footer {
     margin-left: 0.5rem;
     color: var(--mid-gray);
 }
+
+/* Options Container and Box Styles */
+.options-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.option-box {
+    flex: 1;
+    padding: 2rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.option-box h2 {
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+}
+
+.option-box p {
+    margin-bottom: 1.5rem;
+    color: var(--mid-gray);
+}

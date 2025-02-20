@@ -50,9 +50,43 @@ CREATE TABLE IF NOT EXISTS medical_records (
 CREATE TABLE IF NOT EXISTS appointments (
     id INT PRIMARY KEY AUTO_INCREMENT,
     patient_id INT,
-    doctor_name VARCHAR(255),
+    staff_id VARCHAR(255),
     appointment_date DATE,
     appointment_time TIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES users(id)
+);
+
+-- Drop existing appointments table if it exists
+DROP TABLE IF EXISTS appointments;
+
+-- Create new appointments table with all required fields
+CREATE TABLE appointments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    doctor_id INT,
+    specialty VARCHAR(100),
+    appointment_date DATE,
+    time_slot VARCHAR(50),
+    patient_name VARCHAR(255) NOT NULL,
+    contact_number VARCHAR(50),
+    email VARCHAR(255),
+    additional_notes TEXT,
+    appointment_type ENUM('channeling', 'laboratory') NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (doctor_id) REFERENCES staff(id)
+);
+
+-- Create laboratory_tests table for specific lab test details
+CREATE TABLE laboratory_tests (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    appointment_id INT,
+    test_category VARCHAR(100),
+    specific_test VARCHAR(100),
+    doctor_referral INT,
+    fasting_required BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id),
+    FOREIGN KEY (doctor_referral) REFERENCES staff(id)
 );

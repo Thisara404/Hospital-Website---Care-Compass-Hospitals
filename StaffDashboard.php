@@ -8,14 +8,44 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'staff') {
     exit();
 }
 
-$staff_name = $_SESSION['full_name'];
-$staff_id = $_SESSION['staff_id'];
+try {
+    // Create database connection
+    $db = new DatabaseConnection();
+    $conn = $db->conn;
 
-// Fetch today's appointments
-$stmt = $conn->prepare("SELECT * FROM appointments WHERE doctor_id = ? AND appointment_date = CURDATE()");
-$stmt->bind_param("s", $staff_id);
-$stmt->execute();
-$today_appointments = $stmt->get_result();
+    $staff_name = $_SESSION['full_name'];
+    $staff_id = $_SESSION['staff_id'];
+
+    // Fetch today's appointments with error handling
+    $query = "SELECT 
+                a.*,
+                p.full_name as patient_name,
+                lt.test_category,
+                lt.specific_test,
+                lt.fasting_required 
+              FROM appointments a
+              LEFT JOIN users p ON a.user_id = p.id
+              LEFT JOIN laboratory_tests lt ON a.id = lt.appointment_id
+              WHERE a.staff_id = ? 
+              AND a.appointment_date = CURDATE()
+              ORDER BY a.time_slot ASC";
+              
+    $stmt = $conn->prepare($query);
+    
+    if ($stmt === false) {
+        throw new Exception("Failed to prepare query: " . $conn->error);
+    }
+
+    $stmt->bind_param("s", $staff_id);
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to execute query: " . $stmt->error);
+    }
+
+    $today_appointments = $stmt->get_result();
+
+} catch (Exception $e) {
+    die("Error: " . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>

@@ -29,61 +29,109 @@
         <div class="form-container">
             <h1>Laboratory Test Booking</h1>
             <?php
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
             require_once 'backend/db_connection.php';
 
+            if (isset($_SESSION['appointment_error'])) {
+                echo '<div class="alert alert-error">' . htmlspecialchars($_SESSION['appointment_error']) . '</div>';
+                unset($_SESSION['appointment_error']);
+            }
+
             if ($_SERVER["REQUEST_METHOD"] == "POST") {
+                // Store form data in session
+                $_SESSION['temp_lab_appointment'] = [
+                    'test_category' => $_POST['test-category'],
+                    'specific_test' => $_POST['specific-test'],
+                    'test_date' => $_POST['test-date'],
+                    'time_slot' => $_POST['time-slot'],
+                    'patient_name' => $_POST['patient-name'],
+                    'contact' => $_POST['patient-contact'],
+                    'email' => $_POST['patient-email'],
+                    'doctor_referral' => $_POST['doctor-referral'] ?? '',
+                    'notes' => $_POST['additional-notes'] ?? '',
+                    'fasting' => isset($_POST['fasting']) ? 1 : 0
+                ];
+
+                // Check if user is logged in
+                if (!isset($_SESSION['user_id'])) {
+                    header('Location: Login.php?redirect=lab_appointment');
+                    exit();
+                }
+
+                // If user is logged in, process the appointment
                 $db = new DatabaseConnection();
                 $conn = $db->conn;
 
-                // Sanitize inputs
-                $test_category = $conn->real_escape_string($_POST['test-category']);
-                $specific_test = $conn->real_escape_string($_POST['specific-test']);
-                $test_date = $conn->real_escape_string($_POST['test-date']);
-                $time_slot = $conn->real_escape_string($_POST['time-slot']);
-                $patient_name = $conn->real_escape_string($_POST['patient-name']);
-                $contact = $conn->real_escape_string($_POST['patient-contact']);
-                $email = $conn->real_escape_string($_POST['patient-email']);
-                $doctor_referral = $conn->real_escape_string($_POST['doctor-referral'] ?? '');
-                $notes = $conn->real_escape_string($_POST['additional-notes'] ?? '');
-                $fasting = isset($_POST['fasting']) ? 1 : 0;
+                try {
+                    $conn->begin_transaction();
+                    
+                    // Debug logging
+                    error_log("Processing lab appointment for user: " . $user_id);
+                    error_log("Appointment data: " . print_r($appointment, true));
 
-                // Optional: User ID if logged in
-                $user_id = null;
+                    // Get data from session
+                    $appointment = $_SESSION['temp_lab_appointment'];
+                    $user_id = $_SESSION['user_id'];
 
-                $insert_query = "INSERT INTO Laboratory_Tests 
-                                 (user_id, test_category, specific_test, test_date, time_slot, 
-                                  patient_name, contact_number, email, doctor_referral, 
-                                  additional_notes, fasting_required) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    // Insert appointment
+                    $insert_appointment = "INSERT INTO appointments 
+                                         (user_id, patient_name, appointment_date, time_slot,
+                                          contact_number, email, additional_notes, appointment_type) 
+                                         VALUES (?, ?, ?, ?, ?, ?, ?, 'laboratory')";
 
-                $insert_stmt = $conn->prepare($insert_query);
-                $insert_stmt->bind_param(
-                    "isssssssssi",
-                    $user_id,
-                    $test_category,
-                    $specific_test,
-                    $test_date,
-                    $time_slot,
-                    $patient_name,
-                    $contact,
-                    $email,
-                    $doctor_referral,
-                    $notes,
-                    $fasting
-                );
+                    $stmt1 = $conn->prepare($insert_appointment);
+                    $stmt1->bind_param("issssss",  // 7 parameters
+                        $user_id,
+                        $appointment['patient_name'],
+                        $appointment['test_date'],
+                        $appointment['time_slot'],
+                        $appointment['contact'],
+                        $appointment['email'],
+                        $appointment['notes']
+                    );
+                    $stmt1->execute();
+                    $appointment_id = $conn->insert_id;
 
-                if ($insert_stmt->execute()) {
-                    echo json_encode(['status' => 'success', 'message' => 'Laboratory test booked successfully']);
-                } else {
-                    echo json_encode(['status' => 'error', 'message' => 'Failed to book laboratory test']);
+                    // Insert laboratory test details
+                    $insert_lab = "INSERT INTO laboratory_tests 
+                                  (appointment_id, test_category, specific_test, doctor_referral, fasting_required)
+                                  VALUES (?, ?, ?, ?, ?)";
+
+                    $stmt2 = $conn->prepare($insert_lab);
+                    $doctor_referral = (int)$appointment['doctor_referral']; // Convert to integer
+                    $stmt2->bind_param("issii", // Note the 'ii' for integers
+                        $appointment_id,
+                        $appointment['test_category'],
+                        $appointment['specific_test'],
+                        $doctor_referral,
+                        $appointment['fasting']
+                    );
+
+                    if ($stmt2->execute()) {
+                        $conn->commit();
+                        error_log("Lab appointment booked successfully. Appointment ID: " . $appointment_id);
+                        unset($_SESSION['temp_lab_appointment']);
+                        $_SESSION['appointment_success'] = true;
+                        header('Location: Patient.php');
+                        exit();
+                    } else {
+                        throw new Exception("Failed to insert laboratory test details");
+                    }
+
+                } catch (Exception $e) {
+                    error_log("Lab appointment error: " . $e->getMessage());
+                    $conn->rollback();
+                    $_SESSION['appointment_error'] = 'Failed to book laboratory test: ' . $e->getMessage();
+                    header('Location: LaboratoryForm.php');
+                    exit();
                 }
 
-                $insert_stmt->close();
-                $db->closeConnection();
-                exit();
+                $conn->close();
             }
             ?>
-            <form id="laboratory-form" action="process_laboratory.php" method="POST">
+            <form id="laboratory-form" method="POST">
                 <div class="form-group">
                     <label for="test-category">Select Test Category</label>
                     <select id="test-category" name="test-category" required>
@@ -149,8 +197,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="doctor-referral">Doctor's Referral (Optional)</label>
-                    <input type="text" id="doctor-referral" name="doctor-referral" placeholder="Referring Doctor's Name">
+                    <label for="referring-doctor">Referring Doctor</label>
+                    <select id="referring-doctor" name="doctor-referral" required>
+                        <option value="">Select Doctor</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -198,6 +248,27 @@
                 specificTestSelect.appendChild(option);
             });
         });
+
+        // Add this after your existing testCategorySelect script
+        fetch('get_doctors_by_specialty.php')
+            .then(response => response.json())
+            .then(data => {
+                const doctorSelect = document.getElementById('referring-doctor');
+                if (data.status === 'success') {
+                    console.log('Doctors loaded:', data.doctors); // Debug log
+                    doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+                    data.doctors.forEach(doctor => {
+                        const option = document.createElement('option');
+                        option.value = doctor.id;
+                        option.textContent = `Dr. ${doctor.full_name} (${doctor.department})`;
+                        doctorSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading doctors:', error);
+                doctorSelect.innerHTML = '<option value="">Error loading doctors</option>';
+            });
     </script>
 </body>
 
