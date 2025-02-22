@@ -61,7 +61,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Dashboard - Care Compass Hospitals</title>
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="patient.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -141,12 +142,63 @@ try {
                 </div>
             </section>
 
-            <!-- Other sections remain the same -->
-        </main>
+              <!-- Contact Section -->
+    <div id="contact" class="contact">
+        <h2>Contact Us</h2>
+        <div class="contact-container">
+            <div class="contact-info">
+                <div class="contact-detail">
+                    <h3>Hospital Address</h3>
+                    <p>123 Healthcare Avenue, Wellness City, HC 54321</p>
+                </div>
+                <div class="contact-detail">
+                    <h3>Phone Numbers</h3>
+                    <p>Emergency: (555) 123-4567</p>
+                    <p>General Inquiries: (555) 987-6543</p>
+                </div>
+                <div class="contact-detail">
+                    <h3>Email</h3>
+                    <p>info@carecompass.com</p>
+                    <p>support@carecompass.com</p>
+                </div>
+            </div>
+            <div class="contact-form">
+                <form id="contact-form" action="process_contact.php" method="POST">
+                    <input type="text" name="name" placeholder="Your Name" required>
+                    <input type="email" name="email" placeholder="Your Email" required>
+                    <input type="tel" name="phone" placeholder="Your Phone Number">
+                    <textarea name="message" placeholder="Your Message" required></textarea>
+                    <button type="submit" class="btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-        <footer>
-            <p>&copy; 2025 Care Compass Hospitals. All rights reserved.</p>
-        </footer>
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Care Helloooooo  Compass Hospitals. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            fetch('process_contact.php', {
+                    method: 'POST',
+                    body: new FormData(this)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        this.reset();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        });
+    </script>
+        </main>
     </div>
 </body>
 </html>

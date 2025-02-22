@@ -1,0 +1,262 @@
+:root {
+    --dark-gray: #5f7174;
+    --mid-gray: #6a888c;
+    --green: #a5e65a;
+    --light-green: #91f84c;
+    --blue: #00a6c0;
+    --light-blue: #32d9cb;
+    --white: #ffffff;
+    --shadow: #002126;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--white);
+}
+
+/* Header and Navigation */
+.navbar {
+    background: var(--white);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    height: 200px;
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 100%;
+    width: auto;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav-links li {
+    margin: 0;
+    padding: 0;
+}
+
+.nav-links li a {
+    color: var(--dark-gray);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.nav-links li a:hover {
+    color: var(--blue);
+    background-color: rgba(145, 248, 76, 0.853);
+}
+
+.nav-links li a.btn-primary {
+    background: var(--blue);
+    color: var(--white);
+}
+
+.nav-links li a.btn-primary:hover {
+    background: var(--light-blue);
+    color: var(--white);
+}
+
+/* Welcome Section */
+.welcome-message {
+    text-align: center;
+    padding: 2rem;
+    background: var(--light-blue);
+    color: var(--white);
+    margin-bottom: 2rem;
+    border-radius: 10px;
+}
+
+/* Medical Records Section */
+.records-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.record-card {
+    background: var(--white);
+    border-left: 4px solid var(--blue);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Appointments Section */
+.appointments-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.appointment-card {
+    background: var(--white);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.appointment-type {
+    background: var(--blue);
+    color: var(--white);
+    padding: 0.75rem;
+    font-weight: 500;
+}
+
+.appointment-details {
+    padding: 1.5rem;
+}
+
+/* Status Colors */
+.status-pending {
+    color: #f0ad4e;
+}
+
+.status-confirmed {
+    color: var(--green);
+}
+
+.status-cancelled {
+    color: #dc3545;
+}
+
+.fasting-notice {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+/* Contact Section */
+.contact {
+    background: var(--light-blue);
+    padding: 4rem 2rem;
+    color: var(--white);
+    margin-top: 2rem;
+    text-align: center; /* Center the Contact Us heading */
+}
+
+.contact h2 {
+    margin-bottom: 3rem; /* Add some space between heading and container */
+    font-size: 2.5rem; /* Optional: make heading larger */
+}
+
+.contact-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto; /* Center the container */
+    padding: 0 1rem; /* Add some padding on the sides */
+}
+
+.contact-info {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 10px;
+}
+
+.contact-form input,
+.contact-form textarea {
+    width: 100%;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: none;
+    border-radius: 5px;
+    background: var(--white);
+}
+
+.btn-primary {
+    background: var(--blue);
+    color: var(--white);
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: var(--green);
+}
+
+/* Alerts */
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+}
+
+.alert-success {
+    background: var(--light-green);
+    color: var(--shadow);
+    border: 1px solid var(--green);
+}
+
+/* Footer */
+footer {
+    background: var(--dark-gray);
+    color: var(--white);
+    padding: 1rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-links {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .contact-container {
+        grid-template-columns: 1fr;
+    }
+
+    .navbar {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .logo {
+        margin-bottom: 1rem;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .nav-links li {
+        width: 100%;
+        text-align: center;
+    }
+
+    .nav-links li a {
+        display: block;
+        padding: 0.75rem;
+    }
+}
